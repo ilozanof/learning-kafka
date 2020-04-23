@@ -1,3 +1,4 @@
 rootProject.name = 'learning-kafka'
-include 'example-1'
-include 'example-2'
+include 'basic'
+include 'serializationCustom'
+include 'serializationAvro'
