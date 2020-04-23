@@ -1,6 +1,4 @@
-# Example-1
-
-## A simple consumer and Producer
+# Basic example
 
  * This simple project uses the Kafka libraries for Java (but not the spring Template)
  * It uses Spring for dependency injection and @Values population
