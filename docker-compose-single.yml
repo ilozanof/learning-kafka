@@ -1,0 +1,31 @@
+version: '2'
+
+networks:
+  kafka-net:
+    driver: bridge
+
+services:
+  zookeeper-server:
+    image: 'bitnami/zookeeper:latest'
+    networks:
+      - kafka-net
+    ports:
+      - '2181:2181'
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+  kafka-server1:
+    image: 'bitnami/kafka:latest'
+    networks:
+      - kafka-net
+    ports:
+      - '9092:9092'
+      - '9093:9093'
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper-server:2181
+      - KAFKA_CFG_LISTENERS=INTERNAL://:9093,EXTERNAL://:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka-server1:9093,EXTERNAL://localhost:9092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    depends_on:
+      - zookeeper-server
