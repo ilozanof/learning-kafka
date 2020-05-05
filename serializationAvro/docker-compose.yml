@@ -15,6 +15,14 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+
+  # A KAFKA BROKER
+  # NOTE: There seem to be some incompatibilities between the schema-registry, since in our first tests the
+  # schema-registry didn´´ manage to connect to the Broker. After some investigation we found a workaround:
+  # It looks like the schema-registry needs the Broker to have a listener with the "PLAINTEXT" security applied.
+  # Which is what we used to have. But for some reason, when we map our LISTENERS and give them names (like
+  # "INTERNAL" or "EXTERNAL"), the schema.registry does not recognize them. The workaround is to take the "INTERNAL"
+  # Listener, hcih is the one used by the chema.registry to connect to the Broker, and rename it to "PLAINTEXT".
   kafka-server1:
     image: 'confluentinc/cp-kafka:5.1.0'
     networks:
@@ -24,14 +32,18 @@ services:
       - '29092:29092'
     environment:
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper-server:2181
-      - KAFKA_CFG_LISTENERS=INTERNAL://:29092,EXTERNAL://:9092
-      - KAFKA_ADVERTISED_LISTENERS=INTERNAL://kafka-server1:29092,EXTERNAL://localhost:9092
-      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
-      - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:29092,EXTERNAL://:9092
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka-server1:29092,EXTERNAL://localhost:9092
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
       - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
     depends_on:
       - zookeeper-server
     restart: on-failure
+
+  # SCHEMA-REGISTRY
+  # This component is needed by the AVRO framework, for Serialization/Deserialization
+  # all Variables below seem to be mandatory.
   schema-registry:
     image: confluentinc/cp-schema-registry:5.4.0
     hostname: schema-registry
@@ -44,4 +56,5 @@ services:
       - "8081:8081"
     environment:
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
-      SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: "zookeeper-server:2181"
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka-server1:29092
+      SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: zookeeper-server:2181
